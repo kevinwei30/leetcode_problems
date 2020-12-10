@@ -1900,3 +1900,154 @@ class Solution:
 ### Submission
 ![](https://i.imgur.com/cz9jPq3.png =400x)
 
+## (M) 1010. Pairs of Songs With Total Durations Divisible by 60
+https://leetcode.com/problems/pairs-of-songs-with-total-durations-divisible-by-60/
+
+### Description
+給定一個歌曲時間列表**time**(list of int)，數值表示每首歌的長度(秒)，每首歌曲皆獨立，所以可能會有多首歌曲長度相同。任意兩首歌可以組成一個pair，求所有歌曲可以組成幾個**加總時間可以被60整除**的pair(```(time[i] + time[j]) % 60 == 0```)。
+- ```1 <= time.length <= 6 * 10^4```
+- ```1 <= time[i] <= 500```
+
+### Example
+```
+Input: time = [30,20,150,100,40]
+Output: 3
+Explanation: Three pairs have a total duration divisible by 60:
+(time[0] = 30, time[2] = 150): total duration 180
+(time[1] = 20, time[3] = 100): total duration 120
+(time[1] = 20, time[4] = 40): total duration 60
+```
+```
+Input: time = [60,60,60]
+Output: 3
+Explanation: All three pairs have a total duration of 120, which is divisible by 60.
+```
+
+### My Idea
+基本上就是將不同時間長度做組合，檢查總和是否為60的倍數。先遍歷一次time，計算所有時間長度的出現次數time_count，也對不同個位數記下所有獨特的數值，後面做組合嘗試時較節省時間(因為一組pair個位數相加，尾數要等於0才有可能符合題目條件)。然後針對每種個位數配對組合(1配9、2配8、...、0和5配自己)做迴圈檢查，如果符合條件，就將time_count中的數值相乘後加入答案計數。需要注意的是，如果個位數是0，有可能多個自己組合也能符合條件(ex. 30+30=60)，要額外檢查這個情況。
+
+### My Code
+```python=
+class Solution:
+    def numPairsDivisibleBy60(self, time: List[int]) -> int:
+        time_count = dict()
+        t_list = [[] for i in range(10)]
+        for t in time:
+            if t not in time_count:
+                time_count[t] = 1
+                t_list[t % 10].append(t)
+            else:
+                time_count[t] += 1
+        num = 0
+        for i in range(6):
+            pair_list = t_list[i]
+            if i in [0, 5]:
+                while pair_list:
+                    T = pair_list.pop()
+                    T_count = time_count[T]
+                    if i == 0 and T_count > 1 and T % 30 == 0:
+                        num += int((T_count * (T_count - 1)) / 2)
+                    for t in pair_list:
+                        if (T + t) % 60 == 0:
+                            num += T_count * time_count[t]
+            else:
+                search_list = t_list[10 - i]
+                while pair_list:
+                    T = pair_list.pop()
+                    for t in search_list:
+                        if (T + t) % 60 == 0:
+                            num += time_count[T] * time_count[t]
+        return num
+```
+
+### Submission
+![](https://i.imgur.com/Nmy3GKY.png =400x)
+
+## (M) 173. Binary Search Tree Iterator
+https://leetcode.com/problems/binary-search-tree-iterator/
+
+### Description
+實作一個```BSTIterator``` class，做為一個對binary search tree進行中序遍歷的迭代器。細節如下：
+- ```BSTIterator(TreeNode root)```：初始化此類別，傳入BST的root以供樹的建構。應該要創建一個原本不存在的node，其數值小於BST中的所有元素，當成起始遍歷指針位置。
+- ```boolean hasNext()```：判斷是否還有下一個可遍歷的數值，回傳True或False。
+- ```int next()```：將遍歷指針移動到下一個位置，並回傳該位置的數值。
+
+注意，class初始化完成後，第一次呼叫next()時，要回傳BST中的最小數值。另外，題目保證每次呼叫next()時，一定還有可遍歷的數值。
+
+### Example
+![](https://i.imgur.com/ZLsAtxP.png =300x)
+```
+Input
+["BSTIterator", "next", "next", "hasNext", "next", "hasNext", "next", "hasNext", "next", "hasNext"]
+[[[7, 3, 15, null, null, 9, 20]], [], [], [], [], [], [], [], [], []]
+Output
+[null, 3, 7, true, 9, true, 15, true, 20, false]
+
+Explanation
+BSTIterator bSTIterator = new BSTIterator([7, 3, 15, null, null, 9, 20]);
+bSTIterator.next();    // return 3
+bSTIterator.next();    // return 7
+bSTIterator.hasNext(); // return True
+bSTIterator.next();    // return 9
+bSTIterator.hasNext(); // return True
+bSTIterator.next();    // return 15
+bSTIterator.hasNext(); // return True
+bSTIterator.next();    // return 20
+bSTIterator.hasNext(); // return False
+```
+
+### My Idea
+因為是BST，遍歷指針的移動規則如下:
+1. 如果有右節點，就移到**右子樹的最左節點**
+2. 如果沒有右節點，就移到父節點
+所以重點是要記下之前走過的父節點位置，這裡使用一個stack。在狀況1向左**找最左節點**的過程中，要依序放入經過的節點，讓之後遇到狀況2的時候，可以直接pop取出父節點。
+一開始初始化時，就要先做一遍**找最左節點**，就可以找到整個BST的最小節點，然後創建一個節點在最小節點的左邊，當成初始指針位置。另外要注意，最小節點也要放入stack，第一次的next()呼叫才會正確。
+
+### My Code
+```python=
+# Definition for a binary tree node.
+# class TreeNode:
+#     def __init__(self, val=0, left=None, right=None):
+#         self.val = val
+#         self.left = left
+#         self.right = right
+class BSTIterator:
+
+    def __init__(self, root: TreeNode):
+        node = root
+        self.stack = []
+        while node.left is not None:
+            self.stack.append(node)
+            node = node.left
+        self.stack.append(node)
+        self.node = TreeNode(node.val - 1)
+
+    def next(self) -> int:
+        node = self.node
+        if node.right is None:
+            self.node = self.stack.pop()
+        else:
+            node = node.right
+            while node.left is not None:
+                self.stack.append(node)
+                node = node.left
+            self.node = node
+        return self.node.val
+
+    def hasNext(self) -> bool:
+        if len(self.stack) == 0 and self.node.right is None:
+            return False
+        else:
+            return True
+        
+
+# Your BSTIterator object will be instantiated and called as such:
+# obj = BSTIterator(root)
+# param_1 = obj.next()
+# param_2 = obj.hasNext()
+```
+
+### Submission
+![](https://i.imgur.com/KzTRZm3.png =400x)
+
+
